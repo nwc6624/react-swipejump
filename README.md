@@ -1,7 +1,9 @@
 # <h1>SwipeJump Game</h1>
 
 <p>This is a simple React-based game where the player taps the screen or uses arrow keys to move a ball (the player) left and right. The objective is to jump onto ascending platforms and earn points for each successful jump. The game ends when the player misses a platform, and a "Game Over" popup appears. The game also features sound effects for jumps, landings, and game-over events.</p>
-![image](https://github.com/user-attachments/assets/341a8538-7a07-4f65-85cb-0d5178ec5807)
+
+![image](https://github.com/user-attachments/assets/e29a56bd-bb91-4030-99ea-8778b9d3b8ff)
+
 
 ## <h2>Features</h2>
 
