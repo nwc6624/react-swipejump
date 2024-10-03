@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import GameOverPopup from './GameOverPopup';
+import './Styles.css';
 
 function App() {
-  const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 0 });
+  const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 100 });
   const [isJumping, setIsJumping] = useState(false);
   const [steps, setSteps] = useState([]);
   const [score, setScore] = useState(0);
@@ -19,6 +20,7 @@ function App() {
       { x: 300, y: 300 },
     ];
     setSteps(generatedSteps);
+    console.log('Steps generated:', generatedSteps);
   };
 
   const checkCollision = useCallback(() => {
@@ -51,9 +53,11 @@ function App() {
     let newY = playerPosition.y - jumpHeight;
     setPlayerPosition((prevPos) => ({ ...prevPos, y: newY }));
 
+    console.log('Player jumped to:', newY);
+
     setTimeout(() => {
       setPlayerPosition((prevPos) => ({ ...prevPos, y: newY + jumpHeight }));
-      checkCollision(); // Safely call the memoized checkCollision
+      checkCollision();
       setIsJumping(false);
     }, 500);
   }, [playerPosition, isJumping, gameOver, checkCollision]);
@@ -70,7 +74,7 @@ function App() {
 
   const resetGame = () => {
     setScore(0);
-    setPlayerPosition({ x: 0, y: 0 });
+    setPlayerPosition({ x: 0, y: 100 });
     generateSteps();
     setGameOver(false);
   };
@@ -78,9 +82,9 @@ function App() {
   return (
     <div className="game-container">
       <div className="score">Score: {score}</div>
-      <div className="player" style={{ left: playerPosition.x, bottom: playerPosition.y }}></div>
+      <div className="player" style={{ left: `${playerPosition.x}px`, bottom: `${playerPosition.y}px` }}></div>
       {steps.map((step, index) => (
-        <div key={index} className="step" style={{ left: step.x, bottom: step.y }}></div>
+        <div key={index} className="step" style={{ left: `${step.x}px`, bottom: `${step.y}px` }}></div>
       ))}
       {gameOver && <GameOverPopup onReset={resetGame} />}
     </div>
