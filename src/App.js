@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import GameOverPopup from './GameOverPopup';
-import './Styles.css';
 
 function App() {
   const [playerPosition, setPlayerPosition] = useState({ x: 0, y: 0 });
@@ -11,6 +10,55 @@ function App() {
 
   useEffect(() => {
     generateSteps();
+  }, []);
+
+  const generateSteps = () => {
+    const generatedSteps = [
+      { x: 100, y: 100 },
+      { x: 200, y: 200 },
+      { x: 300, y: 300 },
+    ];
+    setSteps(generatedSteps);
+  };
+
+  const checkCollision = useCallback(() => {
+    const currentStep = steps.find(
+      (step) => playerPosition.y === step.y && Math.abs(playerPosition.x - step.x) <= 20
+    );
+
+    if (!currentStep) {
+      setGameOver(true);
+    } else {
+      setScore((prevScore) => prevScore + 1);
+    }
+  }, [playerPosition, steps]);
+
+  const handleMovement = useCallback((e) => {
+    if (gameOver) return;
+
+    if (e.key === 'ArrowLeft') {
+      setPlayerPosition((prevPos) => ({ ...prevPos, x: prevPos.x - 20 }));
+    } else if (e.key === 'ArrowRight') {
+      setPlayerPosition((prevPos) => ({ ...prevPos, x: prevPos.x + 20 }));
+    }
+  }, [gameOver]);
+
+  const handleJump = useCallback(() => {
+    if (isJumping || gameOver) return;
+
+    setIsJumping(true);
+    let jumpHeight = 100;
+    let newY = playerPosition.y - jumpHeight;
+    setPlayerPosition((prevPos) => ({ ...prevPos, y: newY }));
+
+    setTimeout(() => {
+      setPlayerPosition((prevPos) => ({ ...prevPos, y: newY + jumpHeight }));
+      checkCollision(); // Safely call the memoized checkCollision
+      setIsJumping(false);
+    }, 500);
+  }, [playerPosition, isJumping, gameOver, checkCollision]);
+
+  useEffect(() => {
     window.addEventListener('keydown', handleMovement);
     window.addEventListener('touchstart', handleJump);
 
@@ -18,45 +66,7 @@ function App() {
       window.removeEventListener('keydown', handleMovement);
       window.removeEventListener('touchstart', handleJump);
     };
-  }, []);
-
-  const generateSteps = () => {
-    const generatedSteps = [];
-    setSteps(generatedSteps);
-  };
-
-  const handleMovement = (e) => {
-    if (gameOver) return;
-    
-    if (e.key === 'ArrowLeft') {
-      setPlayerPosition({ ...playerPosition, x: playerPosition.x - 20 });
-    } else if (e.key === 'ArrowRight') {
-      setPlayerPosition({ ...playerPosition, x: playerPosition.x + 20 });
-    }
-  };
-
-  const handleJump = () => {
-    if (isJumping || gameOver) return;
-    
-    setIsJumping(true);
-    let jumpHeight = 100;
-    let newY = playerPosition.y - jumpHeight;
-    setPlayerPosition({ ...playerPosition, y: newY });
-
-    setTimeout(() => {
-      setPlayerPosition({ ...playerPosition, y: newY + jumpHeight });
-      checkCollision();
-      setIsJumping(false);
-    }, 500);
-  };
-
-  const checkCollision = () => {
-    if (/* missed a step */) {
-      setGameOver(true);
-    } else {
-      setScore(score + 1);
-    }
-  };
+  }, [handleMovement, handleJump]);
 
   const resetGame = () => {
     setScore(0);
@@ -78,3 +88,4 @@ function App() {
 }
 
 export default App;
+
