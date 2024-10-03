@@ -6,6 +6,7 @@ function App() {
   const [playerPosition, setPlayerPosition] = useState({ x: 150, y: 100 });
   const [isJumping, setIsJumping] = useState(false);
   const [onPlatform, setOnPlatform] = useState(false); // Track if the player is on a platform
+  const [currentPlatform, setCurrentPlatform] = useState(null); // Track the platform the player is on
   const [steps, setSteps] = useState([]); // Green tiles (platforms)
   const [score, setScore] = useState(0);
   const [highScore, setHighScore] = useState(0);
@@ -42,20 +43,24 @@ function App() {
     if (currentStep) {
       // Player successfully landed on a platform
       setOnPlatform(true); // Ball is now on a platform
+      setCurrentPlatform(currentStep); // Track the platform the player is on
       setPlayerPosition((prevPos) => ({ ...prevPos, y: currentStep.y })); // Set player's y position to platform's y
-      
+
       // Only start increasing the score after the first platform is landed on
       if (!hasStarted) {
         setHasStarted(true);
       } else {
         setScore((prevScore) => prevScore + 1);
       }
-      
+
       playSound(landSound);
+    } else if (playerPosition.y <= 0) {
+      handleGameOver(); // Player missed a platform or fell off the screen
     } else {
       setOnPlatform(false); // Ball is not on a platform
+      setCurrentPlatform(null); // No platform under the ball
     }
-  }, [playerPosition, steps, landSound, hasStarted]);
+  }, [playerPosition, steps, landSound, hasStarted, handleGameOver]);
 
   const handleJump = useCallback(() => {
     if (isJumping || gameOver) return;
@@ -63,6 +68,7 @@ function App() {
     playSound(jumpSound); // Play jump sound after user interaction
     setIsJumping(true);
     setOnPlatform(false); // Reset platform state, ball is jumping now
+    setCurrentPlatform(null); // Stop tracking platform since the ball is jumping
     let jumpHeight = 100;
     let newY = playerPosition.y + jumpHeight; // Move upwards by jumpHeight
     setPlayerPosition((prevPos) => ({ ...prevPos, y: newY }));
@@ -71,7 +77,7 @@ function App() {
       setPlayerPosition((prevPos) => ({ ...prevPos, y: newY - jumpHeight })); // Fall back after jump
       checkCollision(); // Check if player landed on a platform
       setIsJumping(false); // Allow gravity after jump completes
-    }, 500); // Jump duration
+    }, 400); // Faster jump duration for more responsive gameplay
   }, [playerPosition, isJumping, gameOver, checkCollision, jumpSound]);
 
   const handleMovement = useCallback((e) => {
@@ -110,8 +116,8 @@ function App() {
   // Gradually increase speed
   useEffect(() => {
     const speedInterval = setInterval(() => {
-      setSpeed((prevSpeed) => Math.min(prevSpeed + 0.1, 10)); // Max speed is 10
-    }, 2000); // Increase speed every 2 seconds
+      setSpeed((prevSpeed) => Math.min(prevSpeed + 0.2, 10)); // Faster speed increase for more dynamic gameplay
+    }, 1500); // Faster speed increase every 1.5 seconds
 
     return () => clearInterval(speedInterval);
   }, []);
@@ -123,7 +129,7 @@ function App() {
     }
   }, [score, highScore]);
 
-  // Falling platforms
+  // Falling platforms and moving the player with the platform
   useEffect(() => {
     const stepInterval = setInterval(() => {
       if (!gameOver) {
@@ -133,6 +139,14 @@ function App() {
             y: step.y - speed, // Move tiles down at the current speed
           }))
         );
+
+        // If the player is on a platform, move the player along with the platform
+        if (onPlatform && currentPlatform) {
+          setPlayerPosition((prevPos) => ({
+            ...prevPos,
+            y: currentPlatform.y - speed,
+          }));
+        }
 
         // Remove tiles that are off the screen
         setSteps((prevSteps) => prevSteps.filter((step) => step.y > 0));
@@ -147,10 +161,10 @@ function App() {
           setSteps((prevSteps) => [...prevSteps, newStep]);
         }
       }
-    }, 100); // Update every 100ms for smooth falling
+    }, 50); // Faster platform update interval for smoother rendering
 
     return () => clearInterval(stepInterval);
-  }, [gameOver, speed]);
+  }, [gameOver, speed, onPlatform, currentPlatform]);
 
   // Gravity effect to simulate falling, but only when not jumping or on platform
   useEffect(() => {
@@ -158,13 +172,16 @@ function App() {
       if (!isJumping && !onPlatform && !gameOver) {
         setPlayerPosition((prevPos) => ({
           ...prevPos,
-          y: Math.max(0, prevPos.y - 5), // Gravity pulls player down
+          y: Math.max(0, prevPos.y - 7), // Faster gravity pull for more dynamic gameplay
         }));
+        if (playerPosition.y <= 0) {
+          handleGameOver(); // Trigger game over if the player falls off the screen
+        }
       }
-    }, 50); // Update every 50ms to simulate gravity
+    }, 30); // Faster gravity interval for smoother falling
 
     return () => clearInterval(gravityInterval);
-  }, [isJumping, onPlatform, gameOver, playerPosition]);
+  }, [isJumping, onPlatform, gameOver, playerPosition, handleGameOver]);
 
   useEffect(() => {
     window.addEventListener('keydown', handleMovement);
@@ -180,9 +197,10 @@ function App() {
     setScore(0);
     setHasStarted(false); // Reset the game start condition
     setPlayerPosition({ x: 150, y: 100 });
-    generateSteps();
-    setSpeed(5); // Reset speed
-    setGameOver(false);
+    setCurrentPlatform(null); // Reset platform tracking
+    generateSteps(); // Regenerate platforms
+    setSpeed(5); // Reset speed to the initial value
+    setGameOver(false); // Reset game over state
   };
 
   return (
@@ -202,4 +220,3 @@ function App() {
 }
 
 export default App;
-
